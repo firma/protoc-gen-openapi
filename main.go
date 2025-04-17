@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 package main
 
 import (
@@ -45,7 +44,6 @@ func main() {
 	}
 
 	opts.Run(func(plugin *protogen.Plugin) error {
-		// Enable "optional" keyword in front of type (e.g. optional string label = 1;)
 		plugin.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 		if *conf.OutputMode == "source_relative" {
 			for _, file := range plugin.Files {
@@ -59,14 +57,21 @@ func main() {
 					return err
 				}
 			}
-			//按protobuf 的一级目录分组生成openapi
 		} else if *conf.OutputMode == "group" {
+			// 按一级目录分组
 			groups := make(map[string][]*protogen.File)
+			excludedFiles := map[string]bool{
+				"errors/errors.proto": true, // 排除 errors/errors.proto
+			}
 			for _, file := range plugin.Files {
 				if !file.Generate {
 					continue
 				}
-				// Extract first-level directory (e.g., "api/v1" from "api/v1/service1.proto")
+				// 跳过排除的文件
+				if excludedFiles[file.Desc.Path()] {
+					continue
+				}
+				// 提取一级目录
 				dir := filepath.Dir(file.Desc.Path())
 				firstLevelDir := dir
 				if idx := strings.Index(dir, string(filepath.Separator)); idx != -1 {
@@ -74,11 +79,10 @@ func main() {
 				}
 				groups[firstLevelDir] = append(groups[firstLevelDir], file)
 			}
-
-			// Generate one OpenAPI file per directory
+			// 为每个目录生成一个 OpenAPI 文件
 			for dir, files := range groups {
-				//outfileName := filepath.Join(dir, dir+".openapi.yaml")
-				outputFile := plugin.NewGeneratedFile(dir+".openapi.yaml", "")
+				outfileName := filepath.Join(dir, dir+".openapi.yaml")
+				outputFile := plugin.NewGeneratedFile(outfileName, "")
 				gen := generator.NewOpenAPIv3Generator(plugin, conf, files)
 				if err := gen.Run(outputFile); err != nil {
 					return err
