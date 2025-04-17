@@ -77,8 +77,8 @@ func main() {
 
 			// Generate one OpenAPI file per directory
 			for dir, files := range groups {
-				outfileName := filepath.Join(dir, dir+".openapi.yaml")
-				outputFile := plugin.NewGeneratedFile(outfileName, "")
+				//outfileName := filepath.Join(dir, dir+".openapi.yaml")
+				outputFile := plugin.NewGeneratedFile(dir+".openapi.yaml", "")
 				gen := generator.NewOpenAPIv3Generator(plugin, conf, files)
 				if err := gen.Run(outputFile); err != nil {
 					return err
